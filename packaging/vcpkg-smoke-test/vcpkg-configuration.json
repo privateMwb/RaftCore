@@ -1,0 +1,8 @@
+{
+  "overlay-ports": [
+    "../vcpkg/ports",
+    "../../libs/internal/VectorPro/packaging/vcpkg/ports",
+    "../../libs/internal/HashMapPro/packaging/vcpkg/ports",
+    "../../libs/internal/FunctionPro/packaging/vcpkg/ports"
+  ]
+}

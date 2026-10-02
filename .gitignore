@@ -1,0 +1,64 @@
+# CMake build directories
+build*/
+cmake-build-*/
+install*/
+# results*/
+
+# Conan-generated CMake presets (local paths, regenerated every build)
+CMakeUserPresets.json
+
+# Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+
+# libFuzzer local run artifacts — the compiled harness binary has no
+# extension on Linux (e.g. `fuzz_vector`), so *.exe above doesn't
+# catch it; and libFuzzer drops crash/leak/oom/timeout reproducers
+# wherever the binary is run from. The two negations keep the actual
+# harness sources under fuzz/ tracked.
+fuzz_*
+!fuzz_*.cpp
+!fuzz_*.h
+crash-*
+leak-*
+oom-*
+timeout-*
+
+# Debug symbols
+*.pdb
+
+# Static / shared libraries
+*.a
+*.lib
+*.so
+*.dll
+
+# Coverage files
+*.gcda
+*.gcno
+*.gcov
+coverage.info
+coverage.filtered.info
+coverage-html/
+
+# Doxygen (fetched theme + generated output, not committed)
+docs/doxygen-awesome-css/
+docs/html/
+
+# Clang tools
+.clangd/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Release tarballs (downloaded locally for hash verification)
+*.tar.gz

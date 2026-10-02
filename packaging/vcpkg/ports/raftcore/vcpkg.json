@@ -1,0 +1,11 @@
+{
+  "name": "raftcore",
+  "version": "1.0.0",
+  "description": "Embedded C++ implementation of the Raft consensus algorithm (leader election and log replication) as a library, with storage, persistence, transport, and randomness behind pluggable interfaces.",
+  "homepage": "https://github.com/privateMwb/RaftCore",
+  "license": "MIT",
+  "dependencies": [
+    "vcpkg-cmake",
+    "vcpkg-cmake-config"
+  ]
+}
