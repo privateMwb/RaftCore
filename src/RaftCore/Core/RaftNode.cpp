@@ -329,8 +329,11 @@ Status RaftNode::handleAppendEntries(AppendEntriesArgs args, AppendEntriesReply&
     }
 
     const LogIndex lastNewEntry = static_cast<LogIndex>(args.prevLogIndex + args.entries.size());
-    if (args.leaderCommit > state_.commitIndex())
-        state_.setCommitIndex(std::min(args.leaderCommit, lastNewEntry));
+    // Figure 2 receiver rule #5. commitIndex never moves backward: a
+    // heartbeat's lastNewEntry can sit below what's already committed.
+    const LogIndex newCommit = std::min(args.leaderCommit, lastNewEntry);
+    if (newCommit > state_.commitIndex())
+        state_.setCommitIndex(newCommit);
 
     outReply.term = state_.currentTerm();
     outReply.success = true;
