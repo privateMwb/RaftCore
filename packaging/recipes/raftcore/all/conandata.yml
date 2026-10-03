@@ -1,4 +1,4 @@
 sources:
   "1.0.0":
     url: "https://github.com/privateMwb/RaftCore.git"
-    commit: "<commit-sha>"
+    commit: "5fdfbb30f1a72974750393f71773427bcea77116"
