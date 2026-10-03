@@ -33,6 +33,13 @@ target_link_libraries(
         GTest::gtest_main
 )
 
+# Allow test files to include local headers directly (e.g. "support/framework.h").
+target_include_directories(
+    google_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # Register each TEST() as its own entry with ctest.
 include(GoogleTest)
 gtest_discover_tests(google_tests)
