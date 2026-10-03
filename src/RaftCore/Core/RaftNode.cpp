@@ -328,12 +328,13 @@ Status RaftNode::handleAppendEntries(AppendEntriesArgs args, AppendEntriesReply&
         break;
     }
 
+    const LogIndex lastNewEntry = static_cast<LogIndex>(args.prevLogIndex + args.entries.size());
     if (args.leaderCommit > state_.commitIndex())
-        state_.setCommitIndex(std::min(args.leaderCommit, state_.log().lastIndex()));
+        state_.setCommitIndex(std::min(args.leaderCommit, lastNewEntry));
 
     outReply.term = state_.currentTerm();
     outReply.success = true;
-    outReply.matchIndex = state_.log().lastIndex();
+    outReply.matchIndex = lastNewEntry;
     return Status::OK;
 }
 
