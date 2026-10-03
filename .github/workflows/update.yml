@@ -92,12 +92,8 @@ jobs:
           git ls-tree "$SHA" libs/internal/ | tee /dev/stderr
 
           declare -A REPOS=(
-            [ArenaAllocator]=privateMwb/ArenaAllocator
-            [HashMap]=privateMwb/HashMap
-            [JsonParser]=privateMwb/JsonParser
-            [LRUCache]=privateMwb/LRUCache
-            [PoolAllocator]=privateMwb/PoolAllocator
-            [PulseThreadPool]=privateMwb/PulseThreadPool
+            [FunctionPro]=privateMwb/FunctionPro
+            [HashMapPro]=privateMwb/HashMap
             [VectorPro]=privateMwb/VectorPro
           )
           ARGS=()
