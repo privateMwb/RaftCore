@@ -299,6 +299,9 @@ RaftCore/
 │   ├── vcpkg/
 │   └── vcpkg-smoke-test/
 │
+├── scripts/
+│   └── update_package_files.py
+│
 ├── .github/
 │   ├── releases/
 │   └── workflows/
