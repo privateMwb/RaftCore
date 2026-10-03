@@ -6,8 +6,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO privateMwb/RaftCore
-    REF <commit-sha>
-    SHA512 0
+    REF 8840c8c75d8a2a5b59527c659ec62677fbb63e45
+    SHA512 f7fcffbc659a1652a681404003d6e98cb19d5681b25d574ca5db3c31bb49bc0273a55489c0325ce97fed9d7f0e4f70828600bc8266d2c6a36fcf4bf37250351b
 )
 
 # GitHub archive tarballs never include submodule content, so RaftCore's
@@ -17,20 +17,20 @@ vcpkg_from_github(
 vcpkg_from_github(
     OUT_SOURCE_PATH FUNCTIONPRO_SOURCE_PATH
     REPO privateMwb/FunctionPro
-    REF <commit-sha>
-    SHA512 0
+    REF 11a7bfb414fe6d6e1cb2974905888bf0df0eee4d
+    SHA512 155e4420f1221fde79dfaa9bf05a2da5a74dc7a0e2f38470561bc0bd5b86ea0d76c9e739fae7879700457ac4833f11b041551b7cc0ed9d51849244f46971af87
 )
 vcpkg_from_github(
     OUT_SOURCE_PATH HASHMAPPRO_SOURCE_PATH
     REPO privateMwb/HashMapPro
-    REF <commit-sha>
-    SHA512 0
+    REF 122dbff03d3c37f85cc9a734dd0db8d51d888501
+    SHA512 a59a2f55f612367cc89c93fa068e9d6beb19de5ee62e094b9a1e272e202dfaec971a41d04cfc007037ccbc8ad12c256933b4293a2115f7d2dc859bc30ba14acf
 )
 vcpkg_from_github(
     OUT_SOURCE_PATH VECTORPRO_SOURCE_PATH
     REPO privateMwb/VectorPro
-    REF <commit-sha>
-    SHA512 0
+    REF 558e1bb9880b13d81ecb195d8ba97d90298fadfc
+    SHA512 ffc53977d22a052e7f20d8dbab5869b33cb52dd28e4f5ab3b8a15772de1ba106bed9d04f294b78b317325151152b6d3f98938d23b266acaa72ef3a5badbb61c2
 )
 
 foreach(SUBMODULE_NAME FunctionPro HashMapPro VectorPro)
