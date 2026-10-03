@@ -142,7 +142,8 @@ TEST(ElectionTest, RejectsCandidateWithStaleLog) {
     NodeState state(persist, storage, "A");
     LogIndex idx;
     ASSERT_EQ(storage.append(1, Vector<std::uint8_t>{}, idx), Status::OK);
-    ASSERT_EQ(storage.append(1, Vector<std::uint8_t>{}, idx), Status::OK); // lastIndex 2, lastTerm 1.
+    ASSERT_EQ(storage.append(1, Vector<std::uint8_t>{}, idx),
+              Status::OK); // lastIndex 2, lastTerm 1.
     SimulatedTransport transport;
     ScriptedRandomSource random(Vector<int>{1000});
     RaftNode node(state, transport, random, Vector<NodeId>{}, 1, 1, 50);

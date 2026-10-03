@@ -30,8 +30,9 @@ TEST(StatusPropagationTest, PersistentStateBlocksElection) {
     ScriptedRandomSource random(Vector<int>{1});
     RaftNode node(state, transport, random, Vector<NodeId>{"B"}, 1, 1, 50);
 
-    EXPECT_EQ(node.tick(), Status::IO_ERROR); // The election timeout fires, but the term bump fails.
-    EXPECT_EQ(state.role(), Role::Follower);  // No partial transition.
+    EXPECT_EQ(node.tick(),
+              Status::IO_ERROR);             // The election timeout fires, but the term bump fails.
+    EXPECT_EQ(state.role(), Role::Follower); // No partial transition.
     EXPECT_EQ(state.currentTerm(), kNoTerm);
 }
 

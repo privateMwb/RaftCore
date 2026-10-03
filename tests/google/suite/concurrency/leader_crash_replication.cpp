@@ -121,10 +121,11 @@ TEST(LeaderCrashMidReplicationTest, LaggingFollowerWinsViaBackoff) {
     // A, unregistered). B's log is more complete (index 2 vs C's index
     // 1, same term) -- the election restriction correctly rejects C.
     transport.pump();
-    EXPECT_EQ(stateB.currentTerm(), 2);       // B still adopts the newer term...
-    EXPECT_FALSE(stateB.votedFor().has_value()); // ...but didn't vote for C: term adoption clears
-                                                 // the vote, and the rejected request never re-set it.
-    EXPECT_EQ(stateC.role(), Role::Candidate);   // C's lone self-vote isn't a majority.
+    EXPECT_EQ(stateB.currentTerm(), 2); // B still adopts the newer term...
+    EXPECT_FALSE(
+        stateB.votedFor().has_value()); // ...but didn't vote for C: term adoption clears
+                                        // the vote, and the rejected request never re-set it.
+    EXPECT_EQ(stateC.role(), Role::Candidate); // C's lone self-vote isn't a majority.
 
     // B's own silence budget (2 ticks, scripted) runs out next -- B
     // starts its own election, for term 3.

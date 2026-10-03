@@ -52,7 +52,7 @@ TEST(NodeStateTest, HigherTermStepsDown) {
 
     EXPECT_EQ(state.observeTerm(5), Status::OK);
     EXPECT_EQ(state.currentTerm(), 5);
-    EXPECT_EQ(state.role(), Role::Follower); // Stepped down.
+    EXPECT_EQ(state.role(), Role::Follower);    // Stepped down.
     EXPECT_FALSE(state.votedFor().has_value()); // A new term means no vote cast in it yet.
 }
 
@@ -79,8 +79,10 @@ TEST(NodeStateTest, GrantVoteKeepsRole) {
     EXPECT_EQ(state.grantVoteTo("X"), Status::OK);
     ASSERT_TRUE(state.votedFor().has_value());
     EXPECT_EQ(state.votedFor().value(), "X");
-    EXPECT_EQ(state.role(), Role::Follower);    // Unchanged -- granting a vote isn't a role transition.
-    EXPECT_EQ(state.currentTerm(), kNoTerm);    // Unchanged -- grantVoteTo() doesn't touch the term either.
+    EXPECT_EQ(state.role(),
+              Role::Follower); // Unchanged -- granting a vote isn't a role transition.
+    EXPECT_EQ(state.currentTerm(),
+              kNoTerm); // Unchanged -- grantVoteTo() doesn't touch the term either.
 }
 
 TEST(NodeStateTest, LeaderInitializesPeerState) {

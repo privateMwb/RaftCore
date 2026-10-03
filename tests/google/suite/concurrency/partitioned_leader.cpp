@@ -93,7 +93,8 @@ TEST(PartitionedLeaderTest, PartitionedLeaderStepsDownOnHeal) {
     transport.unregisterNode("A");
 
     for (int i = 0; i < 3; ++i) {
-        ASSERT_EQ(nodeA.tick(), Status::OK); // A still believes it's Leader, tries to send heartbeats.
+        ASSERT_EQ(nodeA.tick(),
+                  Status::OK); // A still believes it's Leader, tries to send heartbeats.
         ASSERT_TRUE(transport.dropPendingTo("B"));
         ASSERT_TRUE(transport.dropPendingTo("C"));
         ASSERT_EQ(nodeB.tick(), Status::OK); // No heartbeat arrives to reset B's timer anymore.
@@ -107,7 +108,8 @@ TEST(PartitionedLeaderTest, PartitionedLeaderStepsDownOnHeal) {
         .pump(); // B's RequestVote to A fails immediately (unregistered); to C, it's delivered.
     ASSERT_TRUE(stateC.votedFor().has_value());
     EXPECT_EQ(stateC.votedFor().value(), "B");
-    ASSERT_EQ(stateB.role(), Role::Leader); // Reached majority with just C's vote (self + C = 2 of 3).
+    ASSERT_EQ(stateB.role(),
+              Role::Leader); // Reached majority with just C's vote (self + C = 2 of 3).
     EXPECT_EQ(stateB.currentTerm(), 2);
 
     // Split brain: A still thinks it's Leader of term 1, with no idea
