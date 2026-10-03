@@ -79,7 +79,7 @@ jobs:
         run: |
           SHA=$(git rev-list -n 1 "${{ steps.tag.outputs.tag }}")
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          curl -L \
+          curl -fL \
             -o source.tar.gz \
             "https://github.com/${{ env.REPOSITORY }}/archive/${SHA}.tar.gz"
 
@@ -93,7 +93,7 @@ jobs:
 
           declare -A REPOS=(
             [FunctionPro]=privateMwb/FunctionPro
-            [HashMapPro]=privateMwb/HashMap
+            [HashMapPro]=privateMwb/HashMapPro
             [VectorPro]=privateMwb/VectorPro
           )
           ARGS=()
@@ -105,7 +105,7 @@ jobs:
               MISSING+=("$NAME")
               continue
             fi
-            curl -L -o "${NAME}.tar.gz" "https://github.com/${REPO}/archive/${SUB_SHA}.tar.gz"
+            curl -fL -o "${NAME}.tar.gz" "https://github.com/${REPO}/archive/${SUB_SHA}.tar.gz"
             ARGS+=("--submodule" "${NAME}=${REPO}:${SUB_SHA}:${NAME}.tar.gz")
           done
 
