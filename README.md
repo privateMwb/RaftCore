@@ -48,6 +48,9 @@
   <a href="https://github.com/privateMwb/RaftCore/actions/workflows/cflite_pr.yml">
     <img src="https://github.com/privateMwb/RaftCore/actions/workflows/cflite_pr.yml/badge.svg" alt="Fuzzing">
   </a>
+  <a href="https://www.bestpractices.dev/projects/15204">
+    <img src="https://www.bestpractices.dev/projects/15204/badge" alt="OpenSSF Best Practices">
+  </a>
 </p>
 
 <p align="center"><sub><b>Documentation</b></sub></p>

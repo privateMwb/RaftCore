@@ -3,7 +3,7 @@
  *
  * @date            2026-9-29
  *
- * @version         0.1.0
+ * @version         1.0.0
  *
  * @copyright       Copyright (c) 2026 privateMWB
  *                  All rights reserved.
