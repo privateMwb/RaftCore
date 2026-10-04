@@ -6,4 +6,4 @@
 add_subdirectory(custom)
 
 # GoogleTest suite — see google/README.md.
-# add_subdirectory(google)
+add_subdirectory(google)
