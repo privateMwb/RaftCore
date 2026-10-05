@@ -1,29 +1,23 @@
 # ============================================================
-# .github/workflows/cflite_pr.yml
-# Runs a short fuzz pass against fuzz_raft_rpc and
-# fuzz_raft_cluster on every pull request that touches the
-# consensus code or the libraries it's built on, so a change that
-# breaks a Raft safety property or introduces a memory-safety bug
-# fails CI before merge rather than waiting for the next scheduled
-# batch run.
+# .github/workflows/cflite_batch.yml
+# Runs a longer, nightly fuzz pass against fuzz_raft_rpc and
+# fuzz_raft_cluster, independent of any specific PR. This is what
+# actually accumulates fuzzing time/coverage over days and weeks
+# rather than the short per-PR budget in cflite_pr.yml.
 # ============================================================
 
-name: PR Fuzzing
+name: Batch Fuzzing
 
 on:
-  pull_request:
-    paths:
-      - "include/RaftCore/**"
-      - "src/**"
-      - "libs/**"
-      - "fuzz/**"
-      - ".clusterfuzzlite/**"
+  schedule:
+    - cron: "0 4 * * *" # Once a day, 04:00 UTC.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  PR:
+  BatchFuzzing:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,7 +31,6 @@ jobs:
         uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
         with:
           language: c++
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           sanitizer: ${{ matrix.sanitizer }}
 
       - name: Run Fuzzers (${{ matrix.sanitizer }})
@@ -45,7 +38,15 @@ jobs:
         uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          fuzz-seconds: 300
-          mode: "code-change"
+          fuzz-seconds: 3600
+          mode: "batch"
           sanitizer: ${{ matrix.sanitizer }}
           output-sarif: true
+          # Optional but recommended: persists the corpus and crash
+          # artifacts between runs instead of starting from scratch
+          # every night. Needs a PAT with write access to whatever
+          # repo you point this at (a small, dedicated storage repo
+          # is the usual pattern -- not this repo itself).
+          # storage-repo: https://${{ secrets.FUZZ_STORAGE_TOKEN }}@github.com/privateMwb/RaftCore-fuzz-corpus.git
+          # storage-repo-branch: main
+          # storage-repo-branch-coverage: gh-pages
