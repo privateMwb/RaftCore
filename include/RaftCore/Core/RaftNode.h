@@ -20,6 +20,7 @@
 #include <RaftCore/Common/Types.h>        // Term, LogIndex, NodeId
 #include <RaftCore/Core/NodeState.h>      // NodeState
 #include <RaftCore/Interfaces/RandomSource.h> // RandomSource
+#include <RaftCore/Interfaces/StateMachine.h> // StateMachine, bound via setStateMachine()
 #include <RaftCore/Interfaces/Transport.h>    // Transport, RequestVoteArgs/Reply
 #include <HashMapPro/HashMap.h>           // votesReceivedFrom_
 #include <VectorPro/Vector.h>             // peers_
@@ -38,8 +39,10 @@
 // Leader, and counting AppendEntries replies toward advancing
 // commitIndex. On election, appends a no-op entry before the first
 // heartbeat (the Figure 8 fix) so entries from earlier terms can
-// eventually be committed safely. Does not yet drain committed entries
-// to a StateMachine -- that's Phase 5's client-interaction surface.
+// eventually be committed safely. Phase 5: propose() appends a client
+// command on the Leader and replicates it immediately (not on the next
+// heartbeat), and applyCommitted() drains committed entries, in order,
+// into an optionally-bound StateMachine.
 
 namespace RaftCore {
 
@@ -162,6 +165,50 @@ class RaftNode {
      */
     [[nodiscard]] std::optional<Status> takeLastAsyncError() noexcept;
 
+    /**
+     * @brief Binds the sink committed entries are applied to.
+     * @param stateMachine Must outlive this RaftNode, or be unbound with
+     * `nullptr` first. Unbound (the default): applyCommitted() is a no-op
+     * and lastApplied() never advances.
+     * @attention Bind before the first tick()/handle*() call. A node
+     * never persists lastApplied -- it restarts at kNoIndex and replays
+     * every committed entry from index 1 once commitIndex catches up --
+     * so a StateMachine must start empty (or be rebuilt) on every restart.
+     */
+    void setStateMachine(StateMachine* stateMachine) noexcept;
+    /**
+     * @brief Appends a client command to the Leader's log and replicates
+     * it to every peer immediately, without waiting for the heartbeat
+     * interval.
+     * @param payload The opaque command. Must be non-empty: an empty
+     * payload is reserved for the Leader's own election no-op entry.
+     * @param outIndex Set to the entry's log index once appended. The
+     * entry is committed only after state().commitIndex() reaches it --
+     * poll that, or applyCommitted()'s effect on the StateMachine.
+     * @return `Status::OK` on success; `Status::NOT_LEADER` if this node
+     * isn't Leader (outIndex untouched); `Status::INVALID_ARGUMENT` for an
+     * empty payload; `Status::IO_ERROR` etc. if the append fails (nothing
+     * appended). If the append succeeded but reading the log to build an
+     * AppendEntries failed, that failure is returned with `outIndex`
+     * already set: the entry is in the log and heartbeats will retry it.
+     * @details A single-node cluster commits (and applies) synchronously
+     * inside this call.
+     */
+    [[nodiscard]] Status propose(Vector<std::uint8_t> payload, LogIndex& outIndex);
+    /**
+     * @brief Applies every committed-but-unapplied entry to the bound
+     * StateMachine, in log order, advancing lastApplied() after each.
+     * @return `Status::OK` (also when no StateMachine is bound or nothing
+     * is pending); a Storage failure while reading an entry returns that
+     * status and leaves lastApplied() at the last entry that did apply,
+     * so the next call resumes there.
+     * @details Already invoked internally after every commitIndex
+     * advance (tick(), handleAppendEntries(), handleAppendEntriesReply(),
+     * propose()); call it directly only after changing commitIndex
+     * through state() yourself. Empty-payload entries (the election
+     * no-op) advance lastApplied() without invoking apply().
+     */
+    [[nodiscard]] Status applyCommitted();
     /// @brief This node's own state container, as given to the constructor.
     [[nodiscard]] NodeState& state() noexcept;
     [[nodiscard]] const NodeState& state() const noexcept;
@@ -236,6 +283,7 @@ class RaftNode {
     HashMap<NodeId, bool> votesReceivedFrom_;
 
     std::optional<Status> lastAsyncError_;
+    StateMachine* stateMachine_ = nullptr;
 };
 
 } // namespace RaftCore
