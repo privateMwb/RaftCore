@@ -28,6 +28,8 @@ enum class Status {
     NOT_FOUND,
     OUT_OF_MEMORY,
     PARSE_ERROR,
+    NOT_LEADER,       ///< RaftNode::propose() called on a node that isn't currently Leader.
+    INVALID_ARGUMENT, ///< Caller-supplied argument rejected (e.g. an empty propose() payload).
 };
 
 } // namespace RaftCore

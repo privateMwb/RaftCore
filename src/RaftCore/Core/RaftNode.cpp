@@ -4,8 +4,9 @@
  *
  * Contains the implementation of RaftNode's construction, the election
  * timer and heartbeat interval, the RequestVote and AppendEntries RPC
- * handlers, reply handling / vote counting toward becoming Leader, and
- * leader-side replication / commitIndex advancement.
+ * handlers, reply handling / vote counting toward becoming Leader,
+ * leader-side replication / commitIndex advancement, and the client
+ * surface (propose() and the committed-entry apply loop).
  */
 
 // ============================================================
@@ -19,6 +20,7 @@
 //   4. RequestVote — Replies & Vote Counting
 //   5. AppendEntries — Receiving
 //   6. AppendEntries — Leader Replication, Replies & Commit
+//   7. Client Interaction — Propose & Apply
 //
 // ============================================================
 
@@ -132,6 +134,11 @@ Status RaftNode::startNewElection() {
                                          });
     }
 
+    // A single-node cluster has no peers whose replies could ever reach
+    // handleRequestVoteReply(), yet its own vote is already a majority.
+    if (peers_.empty())
+        return becomeLeaderAndStartReplicating();
+
     return Status::OK;
 }
 
@@ -160,7 +167,13 @@ Status RaftNode::becomeLeaderAndStartReplicating() {
         status != Status::OK)
         return status;
 
-    return replicateToAllPeers();
+    // With no peers there are no replies to trigger this later.
+    tryAdvanceCommitIndex();
+
+    if (Status status = replicateToAllPeers(); status != Status::OK)
+        return status;
+
+    return applyCommitted();
 }
 
 Status RaftNode::tick() {
@@ -171,7 +184,10 @@ Status RaftNode::tick() {
             return Status::OK;
 
         ticksSinceHeartbeat_ = 0;
-        return replicateToAllPeers();
+        if (Status status = replicateToAllPeers(); status != Status::OK)
+            return status;
+
+        return applyCommitted();
     }
 
     ++ticksSinceReset_;
@@ -338,6 +354,13 @@ Status RaftNode::handleAppendEntries(AppendEntriesArgs args, AppendEntriesReply&
     outReply.term = state_.currentTerm();
     outReply.success = true;
     outReply.matchIndex = lastNewEntry;
+
+    // The reply is already fully determined; a failed apply must not
+    // withhold it (the Leader would just retry an entry we durably hold).
+    // applyCommitted() resumes from lastApplied() on the next call.
+    if (Status status = applyCommitted(); status != Status::OK)
+        lastAsyncError_ = status;
+
     return Status::OK;
 }
 
@@ -450,6 +473,8 @@ void RaftNode::handleAppendEntriesReply(const NodeId& peer, const AppendEntriesR
         state_.leaderState().matchIndex[peer] = reply.matchIndex;
         state_.leaderState().nextIndex[peer] = reply.matchIndex + 1;
         tryAdvanceCommitIndex();
+        if (Status status = applyCommitted(); status != Status::OK)
+            lastAsyncError_ = status;
         return;
     }
 
@@ -462,6 +487,63 @@ void RaftNode::handleAppendEntriesReply(const NodeId& peer, const AppendEntriesR
         --nextIndex;
 
     (void)replicateTo(peer); // Same non-fatal-dispatch-failure reasoning as elsewhere.
+}
+
+// ============================================================
+//  Section 7 — Client Interaction — Propose & Apply
+// ============================================================
+
+void RaftNode::setStateMachine(StateMachine* stateMachine) noexcept {
+    stateMachine_ = stateMachine;
+}
+
+Status RaftNode::propose(Vector<std::uint8_t> payload, LogIndex& outIndex) {
+    if (state_.role() != Role::Leader)
+        return Status::NOT_LEADER;
+
+    if (payload.empty())
+        return Status::INVALID_ARGUMENT;
+
+    LogIndex index;
+    if (Status status = state_.log().append(state_.currentTerm(), std::move(payload), index);
+        status != Status::OK)
+        return status;
+
+    outIndex = index;
+
+    // Only matters for a single-node cluster, where no peer reply will
+    // ever call it; with peers this finds nothing new to commit yet.
+    tryAdvanceCommitIndex();
+
+    // Replicate now rather than waiting out the heartbeat interval --
+    // otherwise every client write would pay up to one full interval.
+    ticksSinceHeartbeat_ = 0;
+    if (Status status = replicateToAllPeers(); status != Status::OK)
+        return status;
+
+    return applyCommitted();
+}
+
+Status RaftNode::applyCommitted() {
+    if (stateMachine_ == nullptr)
+        return Status::OK;
+
+    while (state_.lastApplied() < state_.commitIndex()) {
+        const LogIndex next = state_.lastApplied() + 1;
+
+        LogEntry entry;
+        if (Status status = state_.log().entryAt(next, entry); status != Status::OK)
+            return status;
+
+        // The election no-op (empty payload) is Raft bookkeeping, not a
+        // client command -- consume its index without surfacing it.
+        if (!entry.payload.empty())
+            stateMachine_->apply(next, entry.payload);
+
+        state_.setLastApplied(next);
+    }
+
+    return Status::OK;
 }
 
 } // namespace RaftCore

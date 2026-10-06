@@ -6,6 +6,7 @@
 #include <RaftCore/Interfaces/PersistentState.h> // PersistentState -- InMemoryPersistentState implements it
 #include <RaftCore/Interfaces/RandomSource.h>    // RandomSource -- ScriptedRandomSource implements it
 #include <RaftCore/Interfaces/Storage.h>         // Storage -- InMemoryStorage implements it
+#include <RaftCore/Interfaces/StateMachine.h>    // StateMachine -- RecordingStateMachine implements it
 #include <RaftCore/Interfaces/Transport.h>       // Transport -- SimulatedTransport implements it
 
 #include <FunctionPro/Function.h>          // registered node handlers (copyable, long-lived)
@@ -14,6 +15,7 @@
 #include <VectorPro/Vector.h>              // entries_, script_, pending-message queues
 
 #include <optional>                        // votedFor_
+#include <string>                          // RecordingStateMachine::payloads, makePayload()
 #include <utility>                         // std::move
 // clang-format on
 
@@ -334,5 +336,32 @@ class FailingPersistentState final : public PersistentState {
         return std::nullopt;
     }
 };
+
+// A StateMachine that just remembers what it was handed, in order --
+// the apply-side counterpart to InMemoryStorage. `payloads` holds each
+// delivered payload as a std::string purely so tests can compare against
+// string literals; RaftCore itself only ever deals in byte Vectors.
+class RecordingStateMachine final : public StateMachine {
+  public:
+    void apply(LogIndex index, const Vector<std::uint8_t>& payload) override {
+        indices.push_back(index);
+
+        std::string text;
+        for (std::size_t i = 0; i < payload.size(); ++i)
+            text.push_back(static_cast<char>(payload[i]));
+        payloads.push_back(std::move(text));
+    }
+
+    Vector<LogIndex> indices;
+    Vector<std::string> payloads;
+};
+
+// Builds a propose()/append() payload from text, e.g. makePayload("PUT k v").
+inline Vector<std::uint8_t> makePayload(const std::string& text) {
+    Vector<std::uint8_t> bytes;
+    for (char c : text)
+        bytes.push_back(static_cast<std::uint8_t>(c));
+    return bytes;
+}
 
 } // namespace RaftCore::Test

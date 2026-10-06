@@ -8,7 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Nothing yet.
+- `RaftNode::propose()`: appends a client command on the Leader and
+  replicates it immediately instead of waiting for the next heartbeat.
+- `RaftNode::setStateMachine()` / `RaftNode::applyCommitted()`: committed
+  entries are now drained, in log order, into the bound `StateMachine`
+  after every commit advance. Election no-op entries are consumed without
+  being delivered.
+- `Status::NOT_LEADER` and `Status::INVALID_ARGUMENT`.
+- Test fake `RecordingStateMachine` and tests for the client surface.
+
+### Fixed
+- A single-node cluster (no peers) never became Leader: with no
+  RequestVote replies to count, nothing ever called the vote tally. A node
+  with an empty peer list now wins its election immediately, and its
+  commit index advances without peer acks.
+
+### Changed
+- `StateMachine` documentation no longer promises exactly-once delivery
+  across a restart: `lastApplied` is volatile, so a restarted node replays
+  from index 1 and its `StateMachine` must start empty.
 
 ## [1.0.0] - 2026-10-03
 

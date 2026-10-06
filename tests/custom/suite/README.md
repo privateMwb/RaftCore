@@ -5,9 +5,9 @@ This document describes the test categories under `tests/custom/suite/`
 
 | Category | Focus |
 |---|---|
-| [Unit](#unit) | A single class/responsibility in isolation: NodeState, RaftNode's election handling, RaftNode's replication handling |
+| [Unit](#unit) | A single class/responsibility in isolation: NodeState, RaftNode's election handling, RaftNode's replication handling, RaftNode's propose/apply surface |
 | [Lifecycle](#lifecycle) | Cross-cutting contracts every path must honor: term/commitIndex monotonicity, Status propagation, leaderState reset guarantees |
-| [Integration](#integration) | Multiple pieces exercised together the way a real deployment's event loop would: election, steady-state replication, restart recovery |
+| [Integration](#integration) | Multiple pieces exercised together the way a real deployment's event loop would: election, steady-state replication, client writes, a single-node cluster, restart recovery |
 | [Concurrency](#concurrency) | Multiple independent nodes acting at once: split votes, partitions, a leader crashing mid-replication, log conflict resolution |
 | [Regression](#regression) | One test file per fixed bug, pinning the specific behavior that broke |
 
@@ -26,6 +26,7 @@ where a captured-args technique stands in for a second node.
 | `node_state.cpp` | Role/term/vote transitions (`startElection`, `observeTerm`, `grantVoteTo`), `becomeLeader()` initializing `nextIndex`/`matchIndex` per peer, commitIndex/lastApplied setters, `log()` aliasing the same Storage |
 | `election.cpp` | `tick()`-driven timeout boundary, RequestVote granting (stale-term rejection, the up-to-date-log restriction, a same-candidate retry still granted), vote counting to majority with duplicate-reply dedup |
 | `replication.cpp` | `handleAppendEntries` receiver rules (stale term, missing previous entry, an entries-less heartbeat, commitIndex capped at the follower's own log and never decreasing, a Candidate stepping down), `replicateTo`'s sender-side prevLogIndex/prevLogTerm/entries computation |
+| `propose_apply.cpp` | `propose()` rejecting a non-Leader (`NOT_LEADER`) and an empty payload (`INVALID_ARGUMENT`), `applyCommitted()` as a no-op with no StateMachine bound, in-order delivery that skips the election no-op and never re-delivers, and a late-bound StateMachine catching up |
 
 ---
 
@@ -55,6 +56,8 @@ deployment's event loop would, driven only by `tick()`/`pump()`.
 |---|---|
 | `single_node_election.cpp` | A full election round trip: role transitions, the self-vote, and the no-op entry reaching both followers |
 | `log_replication.cpp` | The no-op entry committing once a majority acks it, three client commands batched into one AppendEntries, and commitIndex covering all of them |
+| `propose_replication.cpp` | `propose()` reaching both followers in one `pump()` with the heartbeat interval far away, the Leader applying right after the majority ack, and followers applying only after a later heartbeat carries the new `leaderCommit` |
+| `single_node_cluster.cpp` | A peerless node electing itself and committing without any ack, `propose()` committing and applying synchronously, and a restarted node re-electing itself and replaying every committed command from index 1 |
 | `restart_recovery.cpp` | currentTerm/votedFor/the log surviving a simulated restart over the same Storage/PersistentState, role correctly not persisting, and the recovered vote being honored |
 
 ---
